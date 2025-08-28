@@ -1,0 +1,69 @@
+name: Debug with tmate - Simulated Failure
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled'
+        required: false
+        default: false
+
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          echo "Setting up build environment..."
+          echo "Current directory: $(pwd)"
+          echo "Node version: $(node --version)"
+          echo "NPM version: $(npm --version)"
+
+      - name: Install dependencies
+        run: |
+          echo "Installing project dependencies..."
+          # Simulate a potential failure point
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${{ inputs.debug_enabled }}" == "true" ]; then
+            echo "Debug mode enabled - simulating failure for demonstration"
+            exit 1
+          fi
+          echo "Dependencies installed successfully"
+
+      - name: Run tests
+        run: |
+          echo "Running test suite..."
+          # Simulate test failure
+          echo "Test 1: PASSED"
+          echo "Test 2: PASSED"
+          echo "Test 3: FAILED - Simulated error for debugging demonstration"
+          echo "This is where you would normally see test output"
+          exit 1
+
+      - name: Setup tmate session on failure
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+          timeout-minutes: 30
+
+      - name: Continue workflow
+        if: ${{ failure() }}
+        run: |
+          echo "Workflow failed. Connect to the tmate session above to debug."
+          echo "To continue the workflow, create a 'continue' file in the session:"
+          echo "  touch continue"
+          echo "  # or on Linux: sudo touch /continue"
+
+      - name: Build success
+        if: ${{ success() }}
+        run: |
+          echo "Build completed successfully!"
+          echo "No debugging needed."
